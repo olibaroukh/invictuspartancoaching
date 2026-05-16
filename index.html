@@ -7,6 +7,60 @@
   <link rel="apple-touch-icon" href="appli_coaching.png">
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css"/>
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, getDocs, deleteDoc }
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBCaswZi4PU5Iygpa-jwzD6tAu8r8qQeMU",
+      authDomain: "invictuspartan-coaching.firebaseapp.com",
+      projectId: "invictuspartan-coaching",
+      storageBucket: "invictuspartan-coaching.firebasestorage.app",
+      messagingSenderId: "663096313380",
+      appId: "1:663096313380:web:6a28b6ce05733b4513bab1"
+    };
+
+    const fbApp = initializeApp(firebaseConfig);
+    const db = getFirestore(fbApp);
+
+    // ── Exposer les fonctions Firebase sur window pour le code principal ──
+    window._fb = {
+      async getAthletes() {
+        try {
+          const snap = await getDocs(collection(db, "athletes"));
+          return snap.docs.map(d => ({ ...d.data(), id: d.id }));
+        } catch(e) { console.error('getAthletes', e); return []; }
+      },
+      async saveAthlete(a) {
+        try {
+          await setDoc(doc(db, "athletes", a.id), a);
+        } catch(e) { console.error('saveAthlete', e); }
+      },
+      async saveAthletes(arr) {
+        try {
+          await Promise.all(arr.map(a => setDoc(doc(db, "athletes", a.id), a)));
+        } catch(e) { console.error('saveAthletes', e); }
+      },
+      async getCoachPw() {
+        try {
+          const snap = await getDoc(doc(db, "config", "coach"));
+          return snap.exists() ? snap.data().pw : null;
+        } catch(e) { return null; }
+      },
+      async setCoachPw(pw) {
+        try {
+          await setDoc(doc(db, "config", "coach"), { pw });
+        } catch(e) { console.error('setCoachPw', e); }
+      }
+    };
+
+    // Signaler que Firebase est prêt
+    window._fbReady = true;
+    document.dispatchEvent(new Event('firebase-ready'));
+    console.log('Firebase Firestore connecté ✓');
+  </script>
   <style>
     :root{
       --gold:#B8963E;--gold-light:#F5EDD0;--gold-mid:#D4B86A;
@@ -198,6 +252,8 @@
     .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px}
     .modal-box{background:var(--bg);border-radius:var(--radius-lg);border:1px solid var(--gold-border);padding:20px;width:100%;max-width:300px;box-shadow:0 8px 32px rgba(0,0,0,0.18)}
     .modal-title{font-size:15px;font-weight:700;color:var(--gold-dark);margin-bottom:4px}
+    /* Firebase loader */
+    #fb-loader{transition:opacity 0.3s}
     .modal-sub{font-size:12px;color:var(--text-sec);margin-bottom:14px}
   </style>
 </head>
@@ -360,12 +416,89 @@ let currentAthleteId=null,logoClicks=0,logoTimer=null;
 let seanceExos=[],showLibre=false;
 
 /* ── Storage ── */
-function getData(){try{return JSON.parse(localStorage.getItem(SK)||'{}')}catch(e){return{}}}
-function saveData(d){localStorage.setItem(SK,JSON.stringify(d))}
-function getAthletes(){return getData().athletes||[]}
-function saveAthletes(arr){const d=getData();d.athletes=arr;saveData(d)}
-function getCoachPw(){return localStorage.getItem(CPK)||null}
-function setCoachPw(pw){localStorage.setItem(CPK,pw)}
+// ── Storage : Firebase Firestore (avec cache local pour la session) ──
+let _athletesCache = null;
+let _coachPwCache = null;
+
+function getData(){return{}} // legacy compat
+function saveData(d){}       // legacy compat
+
+function getAthletes(){
+  // Retourne le cache synchrone (initialisé au démarrage)
+  return _athletesCache || [];
+}
+
+function saveAthletes(arr){
+  _athletesCache = arr;
+  // Sauvegarder en arrière-plan sur Firebase
+  if(window._fbReady){
+    window._fb.saveAthletes(arr).catch(e=>console.error(e));
+  } else {
+    // Fallback localStorage si Firebase pas prêt
+    localStorage.setItem(SK, JSON.stringify({athletes:arr}));
+  }
+}
+
+function getCoachPw(){
+  return _coachPwCache;
+}
+
+function setCoachPw(pw){
+  _coachPwCache = pw;
+  if(window._fbReady){
+    window._fb.setCoachPw(pw).catch(e=>console.error(e));
+  } else {
+    localStorage.setItem(CPK, pw);
+  }
+}
+
+// ── Initialisation async : charge les données depuis Firebase ──
+async function initFirebase(){
+  showLoader(true);
+  try {
+    if(window._fbReady){
+      _athletesCache = await window._fb.getAthletes();
+      _coachPwCache  = await window._fb.getCoachPw();
+    } else {
+      // Attendre Firebase ou fallback localStorage
+      await new Promise((resolve) => {
+        const t = setTimeout(() => resolve(), 3000);
+        document.addEventListener('firebase-ready', async () => {
+          clearTimeout(t);
+          _athletesCache = await window._fb.getAthletes();
+          _coachPwCache  = await window._fb.getCoachPw();
+          resolve();
+        }, {once:true});
+      });
+    }
+    // Si aucun athlète en base, charger les démos
+    if(_athletesCache.length === 0) {
+      // Ne pas charger les démos en prod — commenter la ligne suivante après les tests
+      // initDemo();
+    }
+  } catch(e){
+    console.error('Firebase init error', e);
+    // Fallback localStorage
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||'{}');
+      _athletesCache = d.athletes||[];
+      _coachPwCache = localStorage.getItem(CPK)||null;
+    } catch(e2){}
+  }
+  showLoader(false);
+}
+
+function showLoader(show){
+  let el = document.getElementById('fb-loader');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'fb-loader';
+    el.style.cssText = 'position:fixed;inset:0;background:rgba(26,24,16,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;color:#F5EDD0;font-family:inherit';
+    el.innerHTML = '<div style="font-size:32px;margin-bottom:12px">⚡</div><div style="font-size:15px;font-weight:600;color:#D4B86A">InvictusSpartan Coaching</div><div style="font-size:12px;margin-top:8px;color:#c8a84a">Connexion à la base de données...</div>';
+    document.body.appendChild(el);
+  }
+  el.style.display = show ? 'flex' : 'none';
+}
 
 function initDemo(){
   if(getAthletes().length>0)return;
@@ -1145,7 +1278,8 @@ loginAthlete = function(){
   showScreen('s-athlete');renderAthleteView();
 };
 
-initDemo();
+// initDemo(); // désactivé en production — décommenter pour tests locaux
+initFirebase();
 </script>
 </body>
 </html>
