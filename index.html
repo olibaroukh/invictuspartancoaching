@@ -417,19 +417,18 @@ let seanceExos=[],showLibre=false;
 
 /* ── Storage ── */
 // ── Storage : Firebase Firestore (avec cache local pour la session) ──
-let _athletesCache = null;
+let _athletesCache = [];
 let _coachPwCache = null;
 
 function getData(){return{}} // legacy compat
 function saveData(d){}       // legacy compat
 
 function getAthletes(){
-  // Retourne le cache synchrone (initialisé au démarrage)
-  return _athletesCache || [];
+  return Array.isArray(_athletesCache) ? _athletesCache : [];
 }
 
 function saveAthletes(arr){
-  _athletesCache = arr;
+  _athletesCache = Array.isArray(arr) ? arr : [];
   // Sauvegarder en arrière-plan sur Firebase
   if(window._fbReady){
     window._fb.saveAthletes(arr).catch(e=>console.error(e));
@@ -457,7 +456,7 @@ async function initFirebase(){
   showLoader(true);
   try {
     if(window._fbReady){
-      _athletesCache = await window._fb.getAthletes();
+      _athletesCache = (await window._fb.getAthletes()) || [];
       _coachPwCache  = await window._fb.getCoachPw();
     } else {
       // Attendre Firebase ou fallback localStorage
@@ -465,24 +464,25 @@ async function initFirebase(){
         const t = setTimeout(() => resolve(), 3000);
         document.addEventListener('firebase-ready', async () => {
           clearTimeout(t);
-          _athletesCache = await window._fb.getAthletes();
+          _athletesCache = (await window._fb.getAthletes()) || [];
           _coachPwCache  = await window._fb.getCoachPw();
           resolve();
         }, {once:true});
       });
     }
     // Si aucun athlète en base, charger les démos
-    if(_athletesCache.length === 0) {
-      // Ne pas charger les démos en prod — commenter la ligne suivante après les tests
-      // initDemo();
+    if(!_athletesCache || _athletesCache.length === 0) {
+      // initDemo(); // décommenter pour tester avec des données démo
     }
   } catch(e){
     console.error('Firebase init error', e);
     // Fallback localStorage
     try {
-      const d = JSON.parse(localStorage.getItem(SK)||'{}');
-      _athletesCache = d.athletes||[];
-      _coachPwCache = localStorage.getItem(CPK)||null;
+      try{
+        const d = JSON.parse(localStorage.getItem(SK)||'{}');
+        _athletesCache = Array.isArray(d.athletes) ? d.athletes : [];
+        _coachPwCache = localStorage.getItem(CPK)||null;
+      }catch(e3){_athletesCache=[];}
     } catch(e2){}
   }
   showLoader(false);
