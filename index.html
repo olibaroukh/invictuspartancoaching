@@ -1290,13 +1290,27 @@ function showImport(){
 }
 function handleDrop(e){e.preventDefault();document.getElementById('import-drop').classList.remove('drag');const f=e.dataTransfer.files[0];if(f)handleCSVFile(f)}
 function handleCSVFile(file){
-  if(!file){return}
-  const reader=new FileReader();
-  reader.onload=function(e){
-    const text=e.target.result;
-    parseCSV(text);
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      const buffer = e.target.result;
+      const bytes = new Uint8Array(buffer);
+      // Détecter si UTF-8 valide, sinon utiliser latin-1
+      let text = '';
+      try {
+        text = new TextDecoder('utf-8', {fatal:true}).decode(bytes);
+      } catch(utfErr) {
+        // Fichier en latin-1 (Excel français)
+        text = new TextDecoder('windows-1252').decode(bytes);
+      }
+      parseCSV(text);
+    } catch(e) {
+      showImportErr('Erreur de lecture du fichier : ' + e.message);
+    }
   };
-  reader.readAsText(file,'UTF-8');
+  reader.onerror = function(){ showImportErr('Impossible de lire le fichier.'); };
+  reader.readAsArrayBuffer(file);
 }
 function normalizeHeader(s){
   s=s.toLowerCase();
