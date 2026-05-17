@@ -1527,22 +1527,24 @@ function openGuideCoach(){
 }
 function openPDFGuide(b64, filename){
   try {
-    const byteChars = atob(b64);
-    const byteNums = new Array(byteChars.length);
-    for(let i=0;i<byteChars.length;i++) byteNums[i]=byteChars.charCodeAt(i);
-    const byteArray = new Uint8Array(byteNums);
-    const blob = new Blob([byteArray], {type:'application/pdf'});
+    const binStr = atob(b64);
+    const len = binStr.length;
+    const bytes = new Uint8Array(len);
+    for(let i=0;i<len;i++) bytes[i]=binStr.charCodeAt(i);
+    const blob = new Blob([bytes], {type:'application/pdf'});
     const url = URL.createObjectURL(blob);
+    // Téléchargement direct — fonctionne partout sans popup
     const a = document.createElement('a');
-    a.href = url; a.target = '_blank';
+    a.href = url;
     a.download = filename;
+    a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(()=>URL.revokeObjectURL(url), 5000);
+    setTimeout(()=>URL.revokeObjectURL(url), 10000);
   } catch(e) {
-    console.error('Erreur ouverture guide:', e);
-    alert("Impossible d'ouvrir le guide. Veuillez réessayer.");
+    console.error('Erreur guide PDF:', e);
+    alert("Impossible d'ouvrir le guide. Contactez votre administrateur.");
   }
 }
 window.openGuideAthlete = openGuideAthlete;
