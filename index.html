@@ -1551,6 +1551,134 @@ window.openGuideAthlete = openGuideAthlete;
 window.openGuideCoach   = openGuideCoach;
 window.openPDFGuide     = openPDFGuide;
 
+
+/* ── Exposition sur window (requis pour les onclick HTML avec module Firebase) ── */
+document.addEventListener('DOMContentLoaded', function(){
+  if(typeof loginAthlete !== 'undefined') window.loginAthlete = loginAthlete;
+  if(typeof logout !== 'undefined') window.logout = logout;
+  if(typeof toggleVis !== 'undefined') window.toggleVis = toggleVis;
+  if(typeof handleLogoClic !== 'undefined') window.handleLogoClic = handleLogoClic;
+  if(typeof closeCoachModal !== 'undefined') window.closeCoachModal = closeCoachModal;
+  if(typeof createCoachPw !== 'undefined') window.createCoachPw = createCoachPw;
+  if(typeof checkCoachPw !== 'undefined') window.checkCoachPw = checkCoachPw;
+  if(typeof showAddAthlete !== 'undefined') window.showAddAthlete = showAddAthlete;
+  if(typeof showAthleteList !== 'undefined') window.showAthleteList = showAthleteList;
+  if(typeof showCoachDetail !== 'undefined') window.showCoachDetail = showCoachDetail;
+  if(typeof saveNewAthlete !== 'undefined') window.saveNewAthlete = saveNewAthlete;
+  if(typeof showImport !== 'undefined') window.showImport = showImport;
+  if(typeof handleDrop !== 'undefined') window.handleDrop = handleDrop;
+  if(typeof handleCSVFile !== 'undefined') window.handleCSVFile = handleCSVFile;
+  if(typeof parseCSV !== 'undefined') window.parseCSV = parseCSV;
+  if(typeof showImportPreview !== 'undefined') window.showImportPreview = showImportPreview;
+  if(typeof confirmImport !== 'undefined') window.confirmImport = confirmImport;
+  if(typeof cancelImport !== 'undefined') window.cancelImport = cancelImport;
+  if(typeof showImportErr !== 'undefined') window.showImportErr = showImportErr;
+  if(typeof toggleActif !== 'undefined') window.toggleActif = toggleActif;
+  if(typeof resetPwAthlete !== 'undefined') window.resetPwAthlete = resetPwAthlete;
+  if(typeof editNotes !== 'undefined') window.editNotes = editNotes;
+  if(typeof togglePwDisplay !== 'undefined') window.togglePwDisplay = togglePwDisplay;
+  if(typeof showChangePw !== 'undefined') window.showChangePw = showChangePw;
+  if(typeof saveChangePw !== 'undefined') window.saveChangePw = saveChangePw;
+  if(typeof switchTab !== 'undefined') window.switchTab = switchTab;
+  if(typeof switchMain !== 'undefined') window.switchMain = switchMain;
+  if(typeof switchSub !== 'undefined') window.switchSub = switchSub;
+  if(typeof selectPill !== 'undefined') window.selectPill = selectPill;
+  if(typeof addProgJour !== 'undefined') window.addProgJour = addProgJour;
+  if(typeof updJourName !== 'undefined') window.updJourName = updJourName;
+  if(typeof delJour !== 'undefined') window.delJour = delJour;
+  if(typeof addExo !== 'undefined') window.addExo = addExo;
+  if(typeof delExo !== 'undefined') window.delExo = delExo;
+  if(typeof updExoCat !== 'undefined') window.updExoCat = updExoCat;
+  if(typeof updExoMvt !== 'undefined') window.updExoMvt = updExoMvt;
+  if(typeof updExoField !== 'undefined') window.updExoField = updExoField;
+  if(typeof updChargeType !== 'undefined') window.updChargeType = updChargeType;
+  if(typeof confirmNewMvt !== 'undefined') window.confirmNewMvt = confirmNewMvt;
+  if(typeof cancelNewMvt !== 'undefined') window.cancelNewMvt = cancelNewMvt;
+  if(typeof refreshProgView !== 'undefined') window.refreshProgView = refreshProgView;
+  if(typeof initSeanceForm !== 'undefined') window.initSeanceForm = initSeanceForm;
+  if(typeof updExoSeance !== 'undefined') window.updExoSeance = updExoSeance;
+  if(typeof updCalsEst !== 'undefined') window.updCalsEst = updCalsEst;
+  if(typeof toggleLibreSeance !== 'undefined') window.toggleLibreSeance = toggleLibreSeance;
+  if(typeof addExoLibre !== 'undefined') window.addExoLibre = addExoLibre;
+  if(typeof delExoLibre !== 'undefined') window.delExoLibre = delExoLibre;
+  if(typeof showCalOvr !== 'undefined') window.showCalOvr = showCalOvr;
+  if(typeof saveSeance !== 'undefined') window.saveSeance = saveSeance;
+  if(typeof saveForme !== 'undefined') window.saveForme = saveForme;
+  if(typeof initPRTab !== 'undefined') window.initPRTab = initPRTab;
+  if(typeof savePR !== 'undefined') window.savePR = savePR;
+  if(typeof deletePR !== 'undefined') window.deletePR = deletePR;
+  if(typeof updatePRMvtList !== 'undefined') window.updatePRMvtList = updatePRMvtList;
+  if(typeof openVideo !== 'undefined') window.openVideo = openVideo;
+  if(typeof openGuideAthlete !== 'undefined') window.openGuideAthlete = openGuideAthlete;
+  if(typeof openGuideCoach !== 'undefined') window.openGuideCoach = openGuideCoach;
+  if(typeof openPDFGuide !== 'undefined') window.openPDFGuide = openPDFGuide;
+  if(typeof showNotif !== 'undefined') window.showNotif = showNotif;
+  if(typeof renderProgView !== 'undefined') window.renderProgView = renderProgView;
+  if(typeof renderCoachPR !== 'undefined') window.renderCoachPR = renderCoachPR;
+});
+// Exposition immédiate aussi (pour les fonctions définies avant DOMContentLoaded)
+try{ if(typeof loginAthlete !== 'undefined') window.loginAthlete = loginAthlete; }catch(e){}
+try{ if(typeof logout !== 'undefined') window.logout = logout; }catch(e){}
+try{ if(typeof toggleVis !== 'undefined') window.toggleVis = toggleVis; }catch(e){}
+try{ if(typeof handleLogoClic !== 'undefined') window.handleLogoClic = handleLogoClic; }catch(e){}
+try{ if(typeof closeCoachModal !== 'undefined') window.closeCoachModal = closeCoachModal; }catch(e){}
+try{ if(typeof createCoachPw !== 'undefined') window.createCoachPw = createCoachPw; }catch(e){}
+try{ if(typeof checkCoachPw !== 'undefined') window.checkCoachPw = checkCoachPw; }catch(e){}
+try{ if(typeof showAddAthlete !== 'undefined') window.showAddAthlete = showAddAthlete; }catch(e){}
+try{ if(typeof showAthleteList !== 'undefined') window.showAthleteList = showAthleteList; }catch(e){}
+try{ if(typeof showCoachDetail !== 'undefined') window.showCoachDetail = showCoachDetail; }catch(e){}
+try{ if(typeof saveNewAthlete !== 'undefined') window.saveNewAthlete = saveNewAthlete; }catch(e){}
+try{ if(typeof showImport !== 'undefined') window.showImport = showImport; }catch(e){}
+try{ if(typeof handleDrop !== 'undefined') window.handleDrop = handleDrop; }catch(e){}
+try{ if(typeof handleCSVFile !== 'undefined') window.handleCSVFile = handleCSVFile; }catch(e){}
+try{ if(typeof parseCSV !== 'undefined') window.parseCSV = parseCSV; }catch(e){}
+try{ if(typeof showImportPreview !== 'undefined') window.showImportPreview = showImportPreview; }catch(e){}
+try{ if(typeof confirmImport !== 'undefined') window.confirmImport = confirmImport; }catch(e){}
+try{ if(typeof cancelImport !== 'undefined') window.cancelImport = cancelImport; }catch(e){}
+try{ if(typeof showImportErr !== 'undefined') window.showImportErr = showImportErr; }catch(e){}
+try{ if(typeof toggleActif !== 'undefined') window.toggleActif = toggleActif; }catch(e){}
+try{ if(typeof resetPwAthlete !== 'undefined') window.resetPwAthlete = resetPwAthlete; }catch(e){}
+try{ if(typeof editNotes !== 'undefined') window.editNotes = editNotes; }catch(e){}
+try{ if(typeof togglePwDisplay !== 'undefined') window.togglePwDisplay = togglePwDisplay; }catch(e){}
+try{ if(typeof showChangePw !== 'undefined') window.showChangePw = showChangePw; }catch(e){}
+try{ if(typeof saveChangePw !== 'undefined') window.saveChangePw = saveChangePw; }catch(e){}
+try{ if(typeof switchTab !== 'undefined') window.switchTab = switchTab; }catch(e){}
+try{ if(typeof switchMain !== 'undefined') window.switchMain = switchMain; }catch(e){}
+try{ if(typeof switchSub !== 'undefined') window.switchSub = switchSub; }catch(e){}
+try{ if(typeof selectPill !== 'undefined') window.selectPill = selectPill; }catch(e){}
+try{ if(typeof addProgJour !== 'undefined') window.addProgJour = addProgJour; }catch(e){}
+try{ if(typeof updJourName !== 'undefined') window.updJourName = updJourName; }catch(e){}
+try{ if(typeof delJour !== 'undefined') window.delJour = delJour; }catch(e){}
+try{ if(typeof addExo !== 'undefined') window.addExo = addExo; }catch(e){}
+try{ if(typeof delExo !== 'undefined') window.delExo = delExo; }catch(e){}
+try{ if(typeof updExoCat !== 'undefined') window.updExoCat = updExoCat; }catch(e){}
+try{ if(typeof updExoMvt !== 'undefined') window.updExoMvt = updExoMvt; }catch(e){}
+try{ if(typeof updExoField !== 'undefined') window.updExoField = updExoField; }catch(e){}
+try{ if(typeof updChargeType !== 'undefined') window.updChargeType = updChargeType; }catch(e){}
+try{ if(typeof confirmNewMvt !== 'undefined') window.confirmNewMvt = confirmNewMvt; }catch(e){}
+try{ if(typeof cancelNewMvt !== 'undefined') window.cancelNewMvt = cancelNewMvt; }catch(e){}
+try{ if(typeof refreshProgView !== 'undefined') window.refreshProgView = refreshProgView; }catch(e){}
+try{ if(typeof initSeanceForm !== 'undefined') window.initSeanceForm = initSeanceForm; }catch(e){}
+try{ if(typeof updExoSeance !== 'undefined') window.updExoSeance = updExoSeance; }catch(e){}
+try{ if(typeof updCalsEst !== 'undefined') window.updCalsEst = updCalsEst; }catch(e){}
+try{ if(typeof toggleLibreSeance !== 'undefined') window.toggleLibreSeance = toggleLibreSeance; }catch(e){}
+try{ if(typeof addExoLibre !== 'undefined') window.addExoLibre = addExoLibre; }catch(e){}
+try{ if(typeof delExoLibre !== 'undefined') window.delExoLibre = delExoLibre; }catch(e){}
+try{ if(typeof showCalOvr !== 'undefined') window.showCalOvr = showCalOvr; }catch(e){}
+try{ if(typeof saveSeance !== 'undefined') window.saveSeance = saveSeance; }catch(e){}
+try{ if(typeof saveForme !== 'undefined') window.saveForme = saveForme; }catch(e){}
+try{ if(typeof initPRTab !== 'undefined') window.initPRTab = initPRTab; }catch(e){}
+try{ if(typeof savePR !== 'undefined') window.savePR = savePR; }catch(e){}
+try{ if(typeof deletePR !== 'undefined') window.deletePR = deletePR; }catch(e){}
+try{ if(typeof updatePRMvtList !== 'undefined') window.updatePRMvtList = updatePRMvtList; }catch(e){}
+try{ if(typeof openVideo !== 'undefined') window.openVideo = openVideo; }catch(e){}
+try{ if(typeof openGuideAthlete !== 'undefined') window.openGuideAthlete = openGuideAthlete; }catch(e){}
+try{ if(typeof openGuideCoach !== 'undefined') window.openGuideCoach = openGuideCoach; }catch(e){}
+try{ if(typeof openPDFGuide !== 'undefined') window.openPDFGuide = openPDFGuide; }catch(e){}
+try{ if(typeof showNotif !== 'undefined') window.showNotif = showNotif; }catch(e){}
+try{ if(typeof renderProgView !== 'undefined') window.renderProgView = renderProgView; }catch(e){}
+try{ if(typeof renderCoachPR !== 'undefined') window.renderCoachPR = renderCoachPR; }catch(e){}
+
 initFirebase();
 </script>
 </body>
