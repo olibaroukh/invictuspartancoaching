@@ -253,6 +253,15 @@
     .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px}
     .modal-box{background:var(--bg);border-radius:var(--radius-lg);border:1px solid var(--gold-border);padding:20px;width:100%;max-width:300px;box-shadow:0 8px 32px rgba(0,0,0,0.18)}
     .modal-title{font-size:15px;font-weight:700;color:var(--gold-dark);margin-bottom:4px}
+    /* PR */
+    .pr-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:0.5px solid var(--border);border-radius:var(--radius-md);margin-bottom:7px;gap:10px}
+    .pr-row:hover{background:var(--bg-sec)}
+    .pr-mvt{font-size:13px;font-weight:600;flex:1}
+    .pr-kg{font-size:18px;font-weight:700;color:var(--gold);flex-shrink:0}
+    .pr-date{font-size:11px;color:var(--text-sec)}
+    .pr-badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:10px;background:var(--gold-light);color:var(--gold-darker);border:0.5px solid var(--gold-border);margin-left:5px;vertical-align:middle}
+    .pr-new{background:#EAF3DE;color:#3B6D11;border-color:#C0DD97}
+    .pr-section-title{font-size:12px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 6px;padding-bottom:4px;border-bottom:0.5px solid var(--border)}
     /* Bouton vidéo */
     .btn-video{padding:2px 8px;font-size:11px;border:0.5px solid rgba(255,0,0,0.25);color:#CC0000;background:rgba(255,0,0,0.05);border-radius:var(--radius-sm);cursor:pointer;white-space:nowrap}
     .btn-video:hover{background:rgba(255,0,0,0.1)}
@@ -662,12 +671,13 @@ function showCoachDetail(id){
   if(a){
     (a.seances||[]).forEach(s=>s.unread=false);
     (a.formes||[]).forEach(f=>f.unread=false);
+    Object.values(a.prs||{}).forEach(p=>p.unread=false);
     saveAthletes(ath);
   }
   renderCoachDetail(id);
 }
 
-function hasUnread(a){return(a.seances||[]).some(s=>s.unread)||(a.formes||[]).some(f=>f.unread)}
+function hasUnread(a){return(a.seances||[]).some(s=>s.unread)||(a.formes||[]).some(f=>f.unread)||Object.values(a.prs||{}).some(p=>p.unread)}
 
 function renderCoachList(){
   const ath=getAthletes();
@@ -704,6 +714,45 @@ function saveNewAthlete(){
 }
 
 /* ── Coach détail ── */
+
+function renderCoachPR(a){
+  const prs = a.prs || {};
+  const keys = Object.keys(prs);
+  if(keys.length === 0) return '<div class="empty-state"><i class="ti ti-trophy"></i>Aucun PR enregistré par cet athlète.</div>';
+
+  // Séparer mouvements du programme et autres
+  const progMvts = new Set();
+  (a.programme||[]).forEach(j=>(j.exercices||[]).forEach(e=>{ if(e.mvt) progMvts.add(e.mvt); }));
+  const progPRs = keys.filter(k => progMvts.has(k)).sort();
+  const otherPRs = keys.filter(k => !progMvts.has(k)).sort();
+
+  let html = '';
+
+  const renderBlock = (list, title, icon) => {
+    if(!list.length) return '';
+    let h = `<div class="pr-section-title"><i class="ti ti-${icon}" style="font-size:12px;margin-right:4px"></i>${title}</div>`;
+    h += `<table class="prog-table"><thead><tr><th>Mouvement</th><th>PR actuel</th><th>Date</th><th>Note</th><th>Entrées</th></tr></thead><tbody>`;
+    list.forEach(mvt => {
+      const data = prs[mvt];
+      const best = data.history.reduce((a,b) => parseFloat(a.kg)>=parseFloat(b.kg)?a:b, data.history[0]);
+      const isNew = data.unread;
+      h += `<tr>
+        <td><strong>${mvt}</strong>${isNew?'<span class="tag tag-new" style="font-size:9px">Nouveau</span>':''}</td>
+        <td><strong style="color:var(--gold)">${best.kg} kg</strong></td>
+        <td style="font-size:11px;color:var(--text-sec)">${fmtDdn(best.date)||best.date}</td>
+        <td style="font-size:11px;font-style:italic;color:var(--text-sec)">${best.note||'—'}</td>
+        <td style="text-align:center;font-size:11px">${data.history.length}</td>
+      </tr>`;
+    });
+    h += '</tbody></table>';
+    return h;
+  };
+
+  html += renderBlock(progPRs, 'PR — Mouvements du programme', 'calendar');
+  html += renderBlock(otherPRs, 'Autres PR', 'barbell');
+  return html;
+}
+
 function renderCoachDetail(id){
   const a=getAthletes().find(x=>x.id===id);if(!a)return;
   const formes=a.formes||[],seances=a.seances||[];
@@ -747,6 +796,7 @@ function renderCoachDetail(id){
     <div class="tabs">
       <button class="tab on" onclick="switchTab(this,'cd-forme')">État de forme</button>
       <button class="tab" onclick="switchTab(this,'cd-seances')">Séances</button>
+      <button class="tab" onclick="switchTab(this,'cd-pr')">PR</button>
       <button class="tab" onclick="switchTab(this,'cd-prog')">Programme</button>
       <button class="tab" onclick="switchTab(this,'cd-progedit')">Éditer prog.</button>
     </div>
@@ -772,6 +822,9 @@ function renderCoachDetail(id){
             ${s.note?`<span class="hist-pill" style="font-style:italic;color:var(--text-sec)">"${s.note}"</span>`:''}
           </div>
         </div>`).join('')}
+    </div>
+    <div id="cd-pr" class="tab-panel">
+      ${renderCoachPR(a)}
     </div>
     <div id="cd-prog" class="tab-panel">${renderProgView(a.programme||[])}</div>
     <div id="cd-progedit" class="tab-panel">
@@ -920,6 +973,7 @@ function renderAthleteView(){
       <button class="main-tab on" onclick="switchMain(this,'at-forme')"><i class="ti ti-moon" style="font-size:13px;margin-right:3px"></i>État de forme</button>
       <button class="main-tab" onclick="switchMain(this,'at-seance')"><i class="ti ti-barbell" style="font-size:13px;margin-right:3px"></i>Séance</button>
       <button class="main-tab" onclick="switchMain(this,'at-prog')"><i class="ti ti-calendar" style="font-size:13px;margin-right:3px"></i>Programme</button>
+      <button class="main-tab" onclick="switchMain(this,'at-pr');initPRTab('${a.id}')"><i class="ti ti-trophy" style="font-size:13px;margin-right:3px"></i>Mes PR</button>
     </div>
 
     <!-- ÉTAT DE FORME -->
@@ -996,7 +1050,12 @@ function renderAthleteView(){
     </div>
 
     <!-- PROGRAMME -->
-    <div id="at-prog" class="main-tab-panel">${renderProgView(a.programme||[])}</div>`;
+    <div id="at-prog" class="main-tab-panel">${renderProgView(a.programme||[])}</div>
+
+    <!-- PR -->
+    <div id="at-pr" class="main-tab-panel">
+      <div id="pr-content-${a.id}"></div>
+    </div>`;
 
   const today=new Date().toISOString().split('T')[0];
   const fd=document.getElementById('f-date');if(fd)fd.value=today;
@@ -1215,7 +1274,7 @@ function saveForme(athId){
 /* ── Helpers ── */
 function showNotif(cId,msg){const n=document.createElement('div');n.className='notif';n.innerHTML=`<i class="ti ti-check" style="margin-right:6px"></i>${msg}`;const c=document.getElementById(cId);if(c)c.insertBefore(n,c.firstChild);setTimeout(()=>n.remove(),3500)}
 function switchTab(btn,panelId){const p=btn.closest('.tabs');p.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));btn.classList.add('on');let s=p.nextElementSibling;while(s){if(s.classList.contains('tab-panel'))s.classList.remove('on');s=s.nextElementSibling}const t=document.getElementById(panelId);if(t)t.classList.add('on')}
-function switchMain(btn,panelId){document.querySelectorAll('.main-tab').forEach(t=>t.classList.remove('on'));btn.classList.add('on');document.querySelectorAll('.main-tab-panel').forEach(p=>p.classList.remove('on'));const p=document.getElementById(panelId);if(p)p.classList.add('on');if(panelId==='at-seance')initSeanceForm(currentAthleteId)}
+function switchMain(btn,panelId){document.querySelectorAll('.main-tab').forEach(t=>t.classList.remove('on'));btn.classList.add('on');document.querySelectorAll('.main-tab-panel').forEach(p=>p.classList.remove('on'));const p=document.getElementById(panelId);if(p)p.classList.add('on');if(panelId==='at-seance')initSeanceForm(currentAthleteId);if(panelId==='at-pr')initPRTab(currentAthleteId);}
 function switchSub(btn,panelId){const p=btn.closest('.sub-tabs');p.querySelectorAll('.sub-tab').forEach(t=>t.classList.remove('on'));btn.classList.add('on');let s=p.nextElementSibling;while(s){if(s.classList.contains('sub-panel'))s.classList.remove('on');s=s.nextElementSibling}const t=document.getElementById(panelId);if(t)t.classList.add('on')}
 function selectPill(el,gId){document.querySelectorAll('#'+gId+' .score-pill').forEach(p=>p.classList.remove('on'));el.classList.add('on')}
 
