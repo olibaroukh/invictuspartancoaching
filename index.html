@@ -1298,23 +1298,93 @@ function handleCSVFile(file){
   };
   reader.readAsText(file,'UTF-8');
 }
+function normalizeHeader(s){
+  s=s.toLowerCase();
+  const r={'\x8f':'e','\x8e':'e','\x8d':'i','\x88':'e','\x8b':'e','\x8c':'a',
+    '\x8a':'s','\x89':'t','\x90':'e','\x91':'a','\x92':'o','\x93':'o','\x94':'o',
+    '\x95':'u','\x96':'u','\x97':'u','\x99':'o','\xe9':'e','\xe0':'a','\xe8':'e',
+    '\xea':'e','\xeb':'e','\xee':'i','\xef':'i','\xf4':'o','\xf9':'u','\xfb':'u',
+    '\xfc':'u','\xe7':'c','\xc9':'e'};
+  for(const [k,v] of Object.entries(r)) s=s.split(k).join(v);
+  return s.replace(/[^a-z0-9]/g,'');
+}
+
+function mapHeaders(headers){
+  const norm=headers.map(h=>normalizeHeader(h));
+  const mapping={};
+  const used=new Set();
+  const fields=[
+    ['prenom',  n=>/prenom|firstname/.test(n)],
+    ['login',   n=>/login|identifiant|username/.test(n)],
+    ['pw',      n=>/passe|password|mdp/.test(n)],
+    ['ddn',     n=>/naissance|ddn|birth/.test(n)],
+    ['objectif',n=>/objectif|goal/.test(n)],
+    ['poids',   n=>/poids|weight/.test(n)],
+    ['taille',  n=>/taille|height/.test(n)],
+    ['notes',   n=>/notes|obs/.test(n)],
+    ['nom',     n=>/nom/.test(n)&&!/prenom|firstname/.test(n)],
+  ];
+  for(const [field,matcher] of fields){
+    for(let i=0;i<norm.length;i++){
+      if(!used.has(i)&&matcher(norm[i])){
+        mapping[field]=i; used.add(i); break;
+      }
+    }
+  }
+  return mapping;
+}
+
 function parseCSV(text){
-  const lines=text.split(/\r?\n/).filter(l=>l.trim());
-  if(lines.length<2){showImportErr('Fichier vide ou invalide.');return}
+  text=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  // Reconstruire lignes en gérant guillemets multi-lignes
+  const rawLines=[];
+  let cur='',inQ=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(c==='"'){inQ=!inQ;continue;}
+    if(c==='\n'&&!inQ){rawLines.push(cur);cur='';continue;}
+    cur+=c;
+  }
+  if(cur.trim())rawLines.push(cur);
+
   // Détecter séparateur
-  const sep=lines[0].includes(';')?';':',';
-  const headers=lines[0].split(sep).map(h=>h.trim().replace(/^"|"$/g,'').toLowerCase());
+  const sep=rawLines.slice(0,5).some(l=>l.includes(';'))?';':',';
+
+  // Trouver ligne d'en-tête : chercher une ligne avec login/identifiant ou prénom
+  let headerIdx=-1;
+  for(let i=0;i<Math.min(rawLines.length,8);i++){
+    const n=normalizeHeader(rawLines[i]);
+    if((n.includes('prenom')||n.includes('login'))&&n.includes('nom')){
+      headerIdx=i; break;
+    }
+  }
+  if(headerIdx<0){showImportErr('En-têtes introuvables. Vérifie que le fichier contient bien les colonnes Prénom, Nom, Login, Mot de passe.');return;}
+
+  const headers=rawLines[headerIdx].split(sep).map(h=>h.replace(/"/g,'').replace(/\n/g,' ').trim());
+  const colMap=mapHeaders(headers);
+
+  // Vérifier colonnes obligatoires
+  if(!('prenom' in colMap)||!('nom' in colMap)||!('login' in colMap)||!('pw' in colMap)){
+    showImportErr('Colonnes obligatoires manquantes (Prénom, Nom, Identifiant, Mot de passe). Colonnes détectées : '+headers.filter(h=>h).join(', '));
+    return;
+  }
+
   const rows=[];
-  for(let i=1;i<lines.length;i++){
-    const vals=lines[i].split(sep).map(v=>v.trim().replace(/^"|"$/g,''));
+  for(let i=headerIdx+1;i<rawLines.length;i++){
+    const vals=rawLines[i].split(sep).map(v=>v.replace(/"/g,'').trim());
     if(vals.every(v=>!v))continue;
     const row={};
-    headers.forEach((h,j)=>{row[h]=vals[j]||''});
-    rows.push(row);
+    for(const [field,idx] of Object.entries(colMap)){
+      row[field]=(vals[idx]||'').trim();
+    }
+    if(row.prenom||row.nom||row.login) rows.push(row);
   }
+
+  if(rows.length===0){showImportErr('Aucune donnée trouvée après les en-têtes.');return;}
   importData=rows;
   showImportPreview(rows);
 }
+
 function showImportPreview(rows){
   const err=document.getElementById('import-err');err.style.display='none';
   if(!rows.length){showImportErr('Aucune donnée trouvée.');return}
@@ -1328,9 +1398,8 @@ function showImportPreview(rows){
   let tableHtml='<thead><tr>'+short.map(s=>`<th>${s}</th>`).join('')+'</tr></thead><tbody>';
   rows.slice(0,5).forEach(row=>{
     tableHtml+='<tr>';
-    ['prénom','nom','âge','objectif','poids','taille','login','passe'].forEach(k=>{
-      const val=find(row,k);
-      tableHtml+=`<td>${val||'—'}</td>`;
+    ['prenom','nom','ddn','objectif','poids','taille','login','pw'].forEach(k=>{
+      tableHtml+=`<td>${row[k]||'—'}</td>`;
     });
     tableHtml+='</tr>';
   });
@@ -1344,7 +1413,10 @@ function showImportErr(msg){const e=document.getElementById('import-err');e.text
 function cancelImport(){showAthleteList()}
 function confirmImport(){
   const ath=getAthletes();
-  const find=(row,key)=>{const k=Object.keys(row).find(k=>k.toLowerCase().includes(key.toLowerCase()));return k?row[k].trim():''};
+  const find=(row,key)=>{
+    const k=Object.keys(row).find(k=>k.toLowerCase().replace(/[^a-z]/g,'').includes(key.toLowerCase().replace(/[^a-z]/g,'')));
+    return k?(row[k]||'').trim():'';
+  };
   let added=0,skipped=0,errors=[];
   importData.forEach((row,i)=>{
     const prenom=find(row,'prénom')||find(row,'prenom');
@@ -1357,10 +1429,10 @@ function confirmImport(){
       id:'a'+Date.now()+i,
       prenom,nom,
       ddn:find(row,'naissance')||find(row,'ddn')||find(row,'date')||'',
-      objectif:find(row,'objectif')||'Remise en forme',
-      poids:parseFloat(find(row,'poids'))||0,
-      taille:parseFloat(find(row,'taille'))||0,
-      notes:find(row,'notes')||'',
+      objectif:row.objectif||'Remise en forme',
+      poids:parseFloat(row.poids)||0,
+      taille:parseFloat(row.taille)||0,
+      notes:row.notes||'',
       login,pw,
       actif:true,
       programme:[],formes:[],seances:[]
