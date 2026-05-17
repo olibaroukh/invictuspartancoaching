@@ -252,6 +252,9 @@
     .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px}
     .modal-box{background:var(--bg);border-radius:var(--radius-lg);border:1px solid var(--gold-border);padding:20px;width:100%;max-width:300px;box-shadow:0 8px 32px rgba(0,0,0,0.18)}
     .modal-title{font-size:15px;font-weight:700;color:var(--gold-dark);margin-bottom:4px}
+    /* Bouton vidéo */
+    .btn-video{padding:2px 8px;font-size:11px;border:0.5px solid rgba(255,0,0,0.25);color:#CC0000;background:rgba(255,0,0,0.05);border-radius:var(--radius-sm);cursor:pointer;white-space:nowrap}
+    .btn-video:hover{background:rgba(255,0,0,0.1)}
     /* Firebase loader */
     #fb-loader{transition:opacity 0.3s}
     .modal-sub{font-size:12px;color:var(--text-sec);margin-bottom:14px}
@@ -394,6 +397,79 @@ const CATEGORIES={
 const CHARGE_TYPES=[{id:'kg',label:'Kg'},{id:'bw',label:'Poids du corps'},{id:'barbell',label:'Barbell vide'},{id:'elastique',label:'Élastique'}];
 const CAL_BASE={'Musculation':6,'Cardio':8,'Fonctionnel / CrossFit':10,'Yoga / Mobilité':3,sport:9,autre:7};
 let customMvts={};
+
+const YOUTUBE_LIBRARY = {
+  'Squat barre': 'https://www.youtube.com/watch?v=9h9FbfQbOaA',
+  'Squat gobelet': 'https://www.youtube.com/watch?v=OPrS8rPFNFI',
+  'Leg press': 'https://www.youtube.com/watch?v=1PqJsMmNmG4',
+  'Fentes': 'https://www.youtube.com/watch?v=3XDriUn0udo',
+  'Hip thrust': 'https://www.youtube.com/watch?v=xJbqFedsTpY',
+  'Romanian deadlift': 'https://www.youtube.com/watch?v=7j-2todUHpE',
+  'Soulevé de terre': 'https://www.youtube.com/watch?v=op9kVnSso6Q',
+  'Leg curl': 'https://www.youtube.com/watch?v=1Tq3QdYUuHs',
+  'Extension quadriceps': 'https://www.youtube.com/watch?v=YyvSfVjQeL0',
+  'Développé couché': 'https://www.youtube.com/watch?v=vcBig73ojpE',
+  'Développé incliné': 'https://www.youtube.com/watch?v=DbFgADa2PL8',
+  'Développé épaules': 'https://www.youtube.com/watch?v=qEwKCR5JCog',
+  'Écarté': 'https://www.youtube.com/watch?v=eozdVDA78K0',
+  'Pull-over': 'https://www.youtube.com/watch?v=4XLkwKYBCqc',
+  'Pompes': 'https://www.youtube.com/watch?v=IODxDxX7oi4',
+  'Rowing barre': 'https://www.youtube.com/watch?v=G8l_8chR5BE',
+  'Rowing haltère': 'https://www.youtube.com/watch?v=pYcpY20QaE8',
+  'Tractions': 'https://www.youtube.com/watch?v=eGo4IYlbE5g',
+  'Tirage poulie haute': 'https://www.youtube.com/watch?v=CAwf7n6Luuc',
+  'Curl biceps': 'https://www.youtube.com/watch?v=ykJmrZ5v0Oo',
+  'Curl marteau': 'https://www.youtube.com/watch?v=TwD-YGVP4Bk',
+  'Extension triceps': 'https://www.youtube.com/watch?v=2-LAMcpzODU',
+  'Dips': 'https://www.youtube.com/watch?v=2z8JmcrW-As',
+  'Gainage': 'https://www.youtube.com/watch?v=ASdvN_XEl_c',
+  'Crunch': 'https://www.youtube.com/watch?v=Xyd_fa5zoEU',
+  'Relevé de jambes': 'https://www.youtube.com/watch?v=l4kQd9eWclE',
+  'Russian twist': 'https://www.youtube.com/watch?v=wkD8rjkodUI',
+  'Hip hinge': 'https://www.youtube.com/watch?v=5_ejB0oHFcM',
+  'Course à pied': 'https://www.youtube.com/watch?v=_kGESn8ArrU',
+  'Vélo': 'https://www.youtube.com/watch?v=g8MRsNpzfaU',
+  'Rameur': 'https://www.youtube.com/watch?v=H0r7QBbCOoE',
+  'Elliptique': 'https://www.youtube.com/watch?v=jPnNSMuVN6o',
+  'Corde à sauter': 'https://www.youtube.com/watch?v=FJmRQ5iTXKE',
+  'Natation': 'https://www.youtube.com/watch?v=5HLW2AI5yMY',
+  'Marche rapide': 'https://www.youtube.com/watch?v=aCDNRMBNVPQ',
+  'Montée de marches': 'https://www.youtube.com/watch?v=0X6OzxRkqpY',
+  'Burpees': 'https://www.youtube.com/watch?v=dZgVxmf6jkA',
+  'Box jump': 'https://www.youtube.com/watch?v=52r_Ul5k03g',
+  'Kettlebell swing': 'https://www.youtube.com/watch?v=YSxHifyI6s8',
+  'Clean & jerk': 'https://www.youtube.com/watch?v=vBPr2EFrSBM',
+  'Snatch': 'https://www.youtube.com/watch?v=9xQp2sldyts',
+  'Thruster': 'https://www.youtube.com/watch?v=L219ltL15zk',
+  'Wall ball': 'https://www.youtube.com/watch?v=fpUD0mcFp_0',
+  'Pull-up': 'https://www.youtube.com/watch?v=eGo4IYlbE5g',
+  'Muscle-up': 'https://www.youtube.com/watch?v=aHJnQfVGHf0',
+  'Double-under': 'https://www.youtube.com/watch?v=82gPsThGfFE',
+  'Sled push': 'https://www.youtube.com/watch?v=cT5HCz1tBxE',
+  'Battle rope': 'https://www.youtube.com/watch?v=FHJbxBVdPU8',
+  'Turkish get-up': 'https://www.youtube.com/watch?v=JDHs8Sy_-b8',
+  'Salutation au soleil': 'https://www.youtube.com/watch?v=CzRdCPSQfBs',
+  'Guerrier 1': 'https://www.youtube.com/watch?v=k-TbeLqSEHk',
+  'Guerrier 2': 'https://www.youtube.com/watch?v=Mn6RSIRCV3w',
+  'Chien tête en bas': 'https://www.youtube.com/watch?v=EC7RGJ975iM',
+  'Pigeon': 'https://www.youtube.com/watch?v=24qHBMdl1QA',
+  'Étirement ischio': 'https://www.youtube.com/watch?v=1QBqhG1BOFM',
+  'Mobilité hanche': 'https://www.youtube.com/watch?v=GxMHSfNAqfw',
+  'Foam roller dos': 'https://www.youtube.com/watch?v=OhZNHFarQgU',
+  'Étirement mollet': 'https://www.youtube.com/watch?v=2qCPPm4xvYk',
+};
+
+function getYoutubeUrl(mvt, customUrl) {
+  if(customUrl && customUrl.trim()) return customUrl.trim();
+  return YOUTUBE_LIBRARY[mvt] || null;
+}
+
+function openVideo(mvt, customUrl) {
+  const url = getYoutubeUrl(mvt, customUrl);
+  if(url) window.open(url, '_blank');
+  else alert('Aucune vidéo disponible pour ce mouvement.');
+}
+
 
 function calcAge(ddn){
   if(!ddn) return null;
@@ -708,7 +784,12 @@ function renderProgView(prog){
         <i class="ti ti-calendar-event"></i>${j.jour}</div>
       <table class="prog-table"><thead><tr><th>Mouvement</th><th>Séries</th><th>Reps</th><th>Charge</th></tr></thead>
       <tbody>${(j.exercices||[]).map(e=>`<tr>
-        <td>${e.mvt||'—'}${e.cat?`<span class="cat-badge ${catClass(e.cat)}">${e.cat.split(' /')[0]}</span>`:''}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span>${e.mvt||'—'}${e.cat?`<span class="cat-badge ${catClass(e.cat)}">${e.cat.split(' /')[0]}</span>`:''}</span>
+            ${getYoutubeUrl(e.mvt,e.videoUrl)?`<button onclick="openVideo('${e.mvt.replace(/'/g,"\'")}','${(e.videoUrl||'').replace(/'/g,"\'")}')" style="padding:2px 7px;font-size:11px;border-color:rgba(255,0,0,0.3);color:#CC0000;background:rgba(255,0,0,0.05);flex-shrink:0"><i class="ti ti-player-play-filled" style="font-size:11px"></i> Vidéo</button>`:''}
+          </div>
+        </td>
         <td>${e.series||'—'}</td><td>${e.reps||'—'}</td><td>${fmtCharge(e)}</td>
       </tr>`).join('')}</tbody></table>
     </div>`).join('');
@@ -952,6 +1033,7 @@ function renderSeanceForm(athId,jour,prog){
           <span>${e.mvt}</span>
           ${e.fromProg?`<span class="exo-planned">prévu : ${e.prevSeries}×${e.prevReps}${e.prevChargeVal?' · '+e.prevChargeVal+'kg':''}</span>`:''}
           ${isModified?`<span class="exo-modified-badge"><i class="ti ti-edit" style="font-size:10px"></i> modifié</span>`:''}
+          ${getYoutubeUrl(e.mvt,e.videoUrl)?`<button onclick="openVideo('${e.mvt.replace(/'/g,"\'")}','${(e.videoUrl||'').replace(/'/g,"\'")}')" style="padding:2px 7px;font-size:11px;border-color:rgba(255,0,0,0.3);color:#CC0000;background:rgba(255,0,0,0.05)"><i class="ti ti-player-play-filled" style="font-size:11px"></i> Vidéo</button>`:''}
         </div>
         <div class="${isBw?'exo-fields-3':'exo-fields-4'}">
           <div><label class="lbl">Séries</label><input type="number" value="${e.series}" min="1" onchange="updExoSeance(${i},'series',this.value,'${athId}')"/></div>
