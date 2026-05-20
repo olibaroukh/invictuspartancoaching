@@ -1566,6 +1566,180 @@ window.openGuideCoach   = openGuideCoach;
 window.openPDFGuide     = openPDFGuide;
 
 
+/* ══════════════════════════════
+   GESTION DES PR
+══════════════════════════════ */
+function getAllMvtsForPR(a){
+  const progMvts=new Set();
+  (a.programme||[]).forEach(j=>(j.exercices||[]).forEach(e=>{if(e.mvt)progMvts.add(e.mvt)}));
+  const allMvts=[];
+  Object.values(CATEGORIES).forEach(list=>list.forEach(m=>allMvts.push(m)));
+  Object.values(customMvts).forEach(list=>list.forEach(m=>allMvts.push(m)));
+  return{progMvts:[...progMvts],allMvts:[...new Set(allMvts)]};
+}
+
+function initPRTab(athId){
+  const a=getAthletes().find(x=>x.id===athId);
+  if(!a)return;
+  renderPRContent(athId);
+}
+
+function renderPRContent(athId){
+  const a=getAthletes().find(x=>x.id===athId);
+  if(!a)return;
+  const el=document.getElementById('pr-content-'+athId);
+  if(!el)return;
+  const prs=a.prs||{};
+  const{progMvts,allMvts}=getAllMvtsForPR(a);
+  const prKeys=Object.keys(prs);
+  const progPRs=prKeys.filter(k=>progMvts.includes(k));
+  const otherPRs=prKeys.filter(k=>!progMvts.includes(k));
+  const today=new Date().toISOString().split('T')[0];
+
+  let h=`<div class="card" style="margin-bottom:10px">
+    <div class="section-title"><i class="ti ti-trophy" style="font-size:14px;margin-right:5px;color:var(--gold)"></i>Enregistrer un PR</div>
+    <div class="row" style="margin-bottom:8px">
+      <div class="field"><label class="lbl">Catégorie</label>
+        <select id="pr-cat-${athId}" onchange="updatePRMvtList('${athId}')">
+          <option value="">— Catégorie —</option>
+          ${Object.keys(CATEGORIES).map(c=>`<option value="${c}">${c}</option>`).join('')}
+          <option value="__libre__">✎ Saisie libre</option>
+        </select>
+      </div>
+      <div class="field" id="pr-mvt-field-${athId}">
+        <label class="lbl">Mouvement</label>
+        <select id="pr-mvt-${athId}">
+          <option value="">— Choisir une catégorie —</option>
+        </select>
+      </div>
+    </div>
+    <div id="pr-mvt-libre-field-${athId}" style="display:none;margin-bottom:8px">
+      <label class="lbl">Nom du mouvement</label>
+      <input id="pr-mvt-libre-${athId}" placeholder="ex: Clean & press"/>
+    </div>
+    <div class="row" style="margin-bottom:8px">
+      <div class="field"><label class="lbl">Date</label>
+        <input type="date" id="pr-date-${athId}" value="${today}"/>
+      </div>
+      <div class="field"><label class="lbl">Charge (kg)</label>
+        <input type="number" id="pr-kg-${athId}" placeholder="ex: 120" min="0" step="0.5"/>
+      </div>
+    </div>
+    <div class="field"><label class="lbl">Note libre (optionnel)</label>
+      <input type="text" id="pr-note-${athId}" placeholder="ex: Belle technique, PR en compétition..."/>
+    </div>
+    <button class="btn-gold" style="width:100%" onclick="savePR('${athId}')">
+      <i class="ti ti-trophy"></i> Enregistrer ce PR
+    </button>
+  </div>`;
+
+  if(progPRs.length>0){
+    h+=`<div class="pr-section-title"><i class="ti ti-calendar" style="font-size:12px;margin-right:4px"></i>PR — Mouvements du programme</div>`;
+    h+=progPRs.sort().map(mvt=>renderPRRow(mvt,prs[mvt],athId)).join('');
+  }
+  if(otherPRs.length>0){
+    h+=`<div class="pr-section-title"><i class="ti ti-barbell" style="font-size:12px;margin-right:4px"></i>Autres PR</div>`;
+    h+=otherPRs.sort().map(mvt=>renderPRRow(mvt,prs[mvt],athId)).join('');
+  }
+  if(prKeys.length===0){
+    h+=`<div class="empty-state"><i class="ti ti-trophy"></i>Aucun PR enregistré.<br>Commence par saisir ton premier record !</div>`;
+  }
+  el.innerHTML=h;
+}
+
+function renderPRRow(mvt,prData,athId){
+  if(!prData||!prData.history||!prData.history.length)return'';
+  const best=prData.history.reduce((a,b)=>parseFloat(a.kg)>=parseFloat(b.kg)?a:b);
+  const isNew=prData.history.length>0&&(new Date()-new Date(prData.history[prData.history.length-1].date))<7*24*3600*1000;
+  const mvtSafe=mvt.replace(/'/g,"\\'");
+  return`<div class="pr-row">
+    <div>
+      <div class="pr-mvt">${mvt}${isNew?'<span class="pr-badge pr-new">Nouveau</span>':''}</div>
+      <div class="pr-date">${best.date||'—'}${best.note?` · <em style="color:var(--text-sec)">${best.note}</em>`:''}</div>
+      ${prData.history.length>1?`<div style="font-size:10px;color:var(--text-sec);margin-top:2px">${prData.history.length} entrées</div>`:''}
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="pr-kg">${best.kg} <span style="font-size:12px;font-weight:400">kg</span></div>
+      <button class="btn-sm btn-icon" onclick="deletePR('${athId}','${mvtSafe}')" style="color:#C0392B;border-color:rgba(192,57,43,0.2)">
+        <i class="ti ti-trash" style="font-size:13px"></i>
+      </button>
+    </div>
+  </div>`;
+}
+
+function updatePRMvtList(athId){
+  const cat=document.getElementById('pr-cat-'+athId)?.value;
+  const mvtSel=document.getElementById('pr-mvt-'+athId);
+  const libreField=document.getElementById('pr-mvt-libre-field-'+athId);
+  const mvtField=document.getElementById('pr-mvt-field-'+athId);
+  if(!mvtSel)return;
+  if(cat==='__libre__'){
+    if(libreField)libreField.style.display='block';
+    if(mvtField)mvtField.style.display='none';
+    return;
+  }
+  if(libreField)libreField.style.display='none';
+  if(mvtField)mvtField.style.display='block';
+  const a=getAthletes().find(x=>x.id===athId);
+  const{progMvts}=getAllMvtsForPR(a);
+  const mvts=getAllMvts(cat);
+  mvtSel.innerHTML='<option value="">— Mouvement —</option>';
+  const progInCat=mvts.filter(m=>progMvts.includes(m));
+  const othersInCat=mvts.filter(m=>!progMvts.includes(m));
+  if(progInCat.length>0){
+    const og=document.createElement('optgroup');
+    og.label='Mon programme';
+    progInCat.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;og.appendChild(o);});
+    mvtSel.appendChild(og);
+  }
+  if(othersInCat.length>0){
+    const og2=document.createElement('optgroup');
+    og2.label='Bibliothèque';
+    othersInCat.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;og2.appendChild(o);});
+    mvtSel.appendChild(og2);
+  }
+}
+
+function savePR(athId){
+  const cat=document.getElementById('pr-cat-'+athId)?.value;
+  let mvt='';
+  if(cat==='__libre__'){
+    mvt=(document.getElementById('pr-mvt-libre-'+athId)?.value||'').trim();
+  } else {
+    mvt=document.getElementById('pr-mvt-'+athId)?.value||'';
+  }
+  const date=document.getElementById('pr-date-'+athId)?.value;
+  const kg=parseFloat(document.getElementById('pr-kg-'+athId)?.value);
+  const note=(document.getElementById('pr-note-'+athId)?.value||'').trim();
+  if(!mvt){alert('Sélectionne ou saisis un mouvement.');return;}
+  if(!date){alert('Indique la date.');return;}
+  if(!kg||kg<=0){alert('Indique une charge valide.');return;}
+  const ath=getAthletes();
+  const a=ath.find(x=>x.id===athId);
+  if(!a.prs)a.prs={};
+  if(!a.prs[mvt])a.prs[mvt]={history:[]};
+  a.prs[mvt].history.push({date,kg,note:note||null});
+  a.prs[mvt].history.sort((x,y)=>new Date(x.date)-new Date(y.date));
+  a.prs[mvt].unread=true;
+  saveAthletes(ath);
+  // Reset formulaire
+  const kgEl=document.getElementById('pr-kg-'+athId);
+  const noteEl=document.getElementById('pr-note-'+athId);
+  if(kgEl)kgEl.value='';
+  if(noteEl)noteEl.value='';
+  showNotif('pr-content-'+athId,`PR ${mvt} enregistré : ${kg} kg !`);
+  renderPRContent(athId);
+}
+
+function deletePR(athId,mvt){
+  if(!confirm('Supprimer tous les PR pour "'+mvt+'" ?'))return;
+  const ath=getAthletes();
+  const a=ath.find(x=>x.id===athId);
+  if(a&&a.prs)delete a.prs[mvt];
+  saveAthletes(ath);
+  renderPRContent(athId);
+}
+
 /* ── Exposition sur window (requis pour les onclick HTML avec module Firebase) ── */
 document.addEventListener('DOMContentLoaded', function(){
   if(typeof loginAthlete !== 'undefined') window.loginAthlete = loginAthlete;
@@ -1693,6 +1867,13 @@ try{ if(typeof showNotif !== 'undefined') window.showNotif = showNotif; }catch(e
 try{ if(typeof renderProgView !== 'undefined') window.renderProgView = renderProgView; }catch(e){}
 try{ if(typeof renderCoachPR !== 'undefined') window.renderCoachPR = renderCoachPR; }catch(e){}
 
+try{ if(typeof getAllMvtsForPR !== 'undefined') window.getAllMvtsForPR = getAllMvtsForPR; }catch(e){}
+try{ if(typeof initPRTab !== 'undefined') window.initPRTab = initPRTab; }catch(e){}
+try{ if(typeof renderPRContent !== 'undefined') window.renderPRContent = renderPRContent; }catch(e){}
+try{ if(typeof renderPRRow !== 'undefined') window.renderPRRow = renderPRRow; }catch(e){}
+try{ if(typeof updatePRMvtList !== 'undefined') window.updatePRMvtList = updatePRMvtList; }catch(e){}
+try{ if(typeof savePR !== 'undefined') window.savePR = savePR; }catch(e){}
+try{ if(typeof deletePR !== 'undefined') window.deletePR = deletePR; }catch(e){}
 initFirebase();
 </script>
 </body>
