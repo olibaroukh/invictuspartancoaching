@@ -305,6 +305,31 @@
   <div class="modal-box" id="modal-coach-content"></div>
 </div>
 
+<!-- ══ MODAL CHANGEMENT MDP COACH ══ -->
+<div id="modal-coach-pw" style="display:none" class="modal-overlay" onclick="if(event.target===this)closeChangeCoachPw()">
+  <div class="modal-box">
+    <div class="modal-title"><i class="ti ti-key" style="margin-right:5px"></i>Changer mon mot de passe</div>
+    <div class="modal-sub">Saisissez votre mot de passe actuel puis le nouveau.</div>
+    <div class="field"><label class="lbl">Mot de passe actuel</label>
+      <div class="input-eye"><input type="password" id="coach-pw-cur" placeholder="Mot de passe actuel"/>
+      <button class="eye-btn" onclick="toggleVis('coach-pw-cur','eye-cpc')"><i class="ti ti-eye" id="eye-cpc"></i></button></div>
+    </div>
+    <div class="field"><label class="lbl">Nouveau mot de passe</label>
+      <div class="input-eye"><input type="password" id="coach-pw-new1" placeholder="Minimum 4 caractères"/>
+      <button class="eye-btn" onclick="toggleVis('coach-pw-new1','eye-cpn1')"><i class="ti ti-eye" id="eye-cpn1"></i></button></div>
+    </div>
+    <div class="field"><label class="lbl">Confirmer</label>
+      <div class="input-eye"><input type="password" id="coach-pw-new2" placeholder="Répéter"/>
+      <button class="eye-btn" onclick="toggleVis('coach-pw-new2','eye-cpn2')"><i class="ti ti-eye" id="eye-cpn2"></i></button></div>
+    </div>
+    <div class="err" id="coach-pw-err"></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button style="flex:1" onclick="closeChangeCoachPw()">Annuler</button>
+      <button class="btn-gold" style="flex:1" onclick="saveChangeCoachPw()">Valider</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ COACH ══ -->
 <div id="s-coach" class="screen">
   <div class="topbar">
@@ -313,6 +338,9 @@
     <span class="topbar-badge"><i class="ti ti-shield" style="font-size:11px;margin-right:3px"></i>Coach</span>
     <button class="btn-sm" onclick="openGuideCoach()" style="border-color:var(--gold-border);color:var(--gold-dark)" title="Guide coach">
       <i class="ti ti-book" style="font-size:14px"></i>
+    </button>
+    <button class="btn-sm" onclick="showChangeCoachPw()" style="border-color:var(--gold-border);color:var(--gold-dark)" title="Changer mon mot de passe">
+      <i class="ti ti-key" style="font-size:14px"></i>
     </button>
     <button class="btn-sm" onclick="logout()">Déconnexion</button>
   </div>
@@ -738,7 +766,7 @@ function renderCoachPR(a){
       const isNew = data.unread;
       h += `<tr>
         <td><strong>${mvt}</strong>${isNew?'<span class="tag tag-new" style="font-size:9px">Nouveau</span>':''}</td>
-        <td><strong style="color:var(--gold)">${best.kg} kg</strong></td>
+        <td><strong style="color:var(--gold)">${best.chargeType==='bw'?'Poids du corps':best.chargeType==='barbell'?'Barbell':best.chargeType==='elastique'?'Élastique':(best.kg?best.kg+' kg':'—')}</strong>${best.reps&&best.reps>1?` <span style='font-size:10px;color:var(--text-sec)'>${best.reps} reps</span>`:' <span style="font-size:10px;color:var(--text-sec)">1RM</span>'}</td>
         <td style="font-size:11px;color:var(--text-sec)">${fmtDdn(best.date)||best.date}</td>
         <td style="font-size:11px;font-style:italic;color:var(--text-sec)">${best.note||'—'}</td>
         <td style="text-align:center;font-size:11px">${data.history.length}</td>
@@ -1621,7 +1649,18 @@ function renderPRContent(athId){
       <div class="field"><label class="lbl">Date</label>
         <input type="date" id="pr-date-${athId}" value="${today}"/>
       </div>
-      <div class="field"><label class="lbl">Charge (kg)</label>
+      <div class="field"><label class="lbl">Répétitions</label>
+        <input type="number" id="pr-reps-${athId}" placeholder="ex: 1 (1RM), 5..." min="1" step="1" value="1"/>
+      </div>
+    </div>
+    <div class="field"><label class="lbl">Charge</label>
+      <div class="charge-pills" id="pr-charge-pills-${athId}">
+        <div class="charge-pill" onclick="selectPRCharge('${athId}','kg')">Kg</div>
+        <div class="charge-pill on" onclick="selectPRCharge('${athId}','bw')">Poids du corps</div>
+        <div class="charge-pill" onclick="selectPRCharge('${athId}','barbell')">Barbell vide</div>
+        <div class="charge-pill" onclick="selectPRCharge('${athId}','elastique')">Élastique</div>
+      </div>
+      <div id="pr-kg-field-${athId}" style="display:none;margin-top:4px">
         <input type="number" id="pr-kg-${athId}" placeholder="ex: 120" min="0" step="0.5"/>
       </div>
     </div>
@@ -1652,6 +1691,8 @@ function renderPRRow(mvt,prData,athId){
   const best=prData.history.reduce((a,b)=>parseFloat(a.kg)>=parseFloat(b.kg)?a:b);
   const isNew=prData.history.length>0&&(new Date()-new Date(prData.history[prData.history.length-1].date))<7*24*3600*1000;
   const mvtSafe=mvt.replace(/'/g,"\\'");
+  const chargeLabel=best.chargeType==='bw'?'Poids du corps':best.chargeType==='barbell'?'Barbell':best.chargeType==='elastique'?'Élastique':(best.kg?best.kg+' kg':'—');
+  const repsLabel=best.reps&&best.reps>1?`${best.reps} reps`:'1RM';
   return`<div class="pr-row">
     <div>
       <div class="pr-mvt">${mvt}${isNew?'<span class="pr-badge pr-new">Nouveau</span>':''}</div>
@@ -1659,7 +1700,10 @@ function renderPRRow(mvt,prData,athId){
       ${prData.history.length>1?`<div style="font-size:10px;color:var(--text-sec);margin-top:2px">${prData.history.length} entrées</div>`:''}
     </div>
     <div style="display:flex;align-items:center;gap:10px">
-      <div class="pr-kg">${best.kg} <span style="font-size:12px;font-weight:400">kg</span></div>
+      <div style="text-align:right">
+        <div class="pr-kg">${chargeLabel}</div>
+        <div style="font-size:11px;color:var(--text-sec)">${repsLabel}</div>
+      </div>
       <button class="btn-sm btn-icon" onclick="deletePR('${athId}','${mvtSafe}')" style="color:#C0392B;border-color:rgba(192,57,43,0.2)">
         <i class="ti ti-trash" style="font-size:13px"></i>
       </button>
@@ -1709,24 +1753,30 @@ function savePR(athId){
     mvt=document.getElementById('pr-mvt-'+athId)?.value||'';
   }
   const date=document.getElementById('pr-date-'+athId)?.value;
-  const kg=parseFloat(document.getElementById('pr-kg-'+athId)?.value);
+  const reps=parseInt(document.getElementById('pr-reps-'+athId)?.value)||1;
+  const container=document.getElementById('pr-charge-pills-'+athId);
+  const chargeType=(container?.dataset?.selected)||'bw';
+  const kg=chargeType==='kg'?parseFloat(document.getElementById('pr-kg-'+athId)?.value):null;
   const note=(document.getElementById('pr-note-'+athId)?.value||'').trim();
   if(!mvt){alert('Sélectionne ou saisis un mouvement.');return;}
   if(!date){alert('Indique la date.');return;}
-  if(!kg||kg<=0){alert('Indique une charge valide.');return;}
+  if(chargeType==='kg'&&(!kg||kg<=0)){alert('Indique une charge valide en kg.');return;}
   const ath=getAthletes();
   const a=ath.find(x=>x.id===athId);
   if(!a.prs)a.prs={};
   if(!a.prs[mvt])a.prs[mvt]={history:[]};
-  a.prs[mvt].history.push({date,kg,note:note||null});
+  a.prs[mvt].history.push({date,reps,chargeType,kg,note:note||null});
   a.prs[mvt].history.sort((x,y)=>new Date(x.date)-new Date(y.date));
   a.prs[mvt].unread=true;
   saveAthletes(ath);
   // Reset formulaire
   const kgEl=document.getElementById('pr-kg-'+athId);
+  const repsEl=document.getElementById('pr-reps-'+athId);
   const noteEl=document.getElementById('pr-note-'+athId);
   if(kgEl)kgEl.value='';
+  if(repsEl)repsEl.value='1';
   if(noteEl)noteEl.value='';
+  selectPRCharge(athId,'bw');
   showNotif('pr-content-'+athId,`PR ${mvt} enregistré : ${kg} kg !`);
   renderPRContent(athId);
 }
@@ -1738,6 +1788,40 @@ function deletePR(athId,mvt){
   if(a&&a.prs)delete a.prs[mvt];
   saveAthletes(ath);
   renderPRContent(athId);
+}
+
+function showChangeCoachPw(){
+  ['coach-pw-cur','coach-pw-new1','coach-pw-new2'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const err=document.getElementById('coach-pw-err');if(err)err.style.display='none';
+  document.getElementById('modal-coach-pw').style.display='flex';
+  setTimeout(()=>{const e=document.getElementById('coach-pw-cur');if(e)e.focus();},80);
+}
+function closeChangeCoachPw(){
+  document.getElementById('modal-coach-pw').style.display='none';
+}
+function saveChangeCoachPw(){
+  const cur=document.getElementById('coach-pw-cur').value;
+  const n1=document.getElementById('coach-pw-new1').value;
+  const n2=document.getElementById('coach-pw-new2').value;
+  const err=document.getElementById('coach-pw-err');
+  err.style.display='none';
+  if(cur!==getCoachPw()){err.textContent='Mot de passe actuel incorrect.';err.style.display='block';return;}
+  if(!n1||n1.length<4){err.textContent='Minimum 4 caractères.';err.style.display='block';return;}
+  if(n1!==n2){err.textContent='Les mots de passe ne correspondent pas.';err.style.display='block';return;}
+  setCoachPw(n1);
+  closeChangeCoachPw();
+  showNotif('coach-list-view','Mot de passe coach modifié avec succès.');
+}
+
+function selectPRCharge(athId, type){
+  const pills=document.querySelectorAll('#pr-charge-pills-'+athId+' .charge-pill');
+  const types=['kg','bw','barbell','elastique'];
+  pills.forEach((p,i)=>p.classList.toggle('on', types[i]===type));
+  const kgField=document.getElementById('pr-kg-field-'+athId);
+  if(kgField) kgField.style.display=type==='kg'?'block':'none';
+  // Stocker le type sélectionné
+  const container=document.getElementById('pr-charge-pills-'+athId);
+  if(container) container.dataset.selected=type;
 }
 
 /* ── Exposition sur window (requis pour les onclick HTML avec module Firebase) ── */
@@ -1874,6 +1958,10 @@ try{ if(typeof renderPRRow !== 'undefined') window.renderPRRow = renderPRRow; }c
 try{ if(typeof updatePRMvtList !== 'undefined') window.updatePRMvtList = updatePRMvtList; }catch(e){}
 try{ if(typeof savePR !== 'undefined') window.savePR = savePR; }catch(e){}
 try{ if(typeof deletePR !== 'undefined') window.deletePR = deletePR; }catch(e){}
+try{ if(typeof showChangeCoachPw !== 'undefined') window.showChangeCoachPw = showChangeCoachPw; }catch(e){}
+try{ if(typeof closeChangeCoachPw !== 'undefined') window.closeChangeCoachPw = closeChangeCoachPw; }catch(e){}
+try{ if(typeof saveChangeCoachPw !== 'undefined') window.saveChangeCoachPw = saveChangeCoachPw; }catch(e){}
+try{ if(typeof selectPRCharge !== 'undefined') window.selectPRCharge = selectPRCharge; }catch(e){}
 initFirebase();
 </script>
 </body>
